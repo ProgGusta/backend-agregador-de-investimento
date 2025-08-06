@@ -1,23 +1,36 @@
 package tech.project.agregadorinvestimento.service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
-import tech.project.agregadorinvestimento.controller.CreateUserDto;
-import tech.project.agregadorinvestimento.controller.UpdateUserDto;
+import tech.project.agregadorinvestimento.controller.dto.AccountResponseDto;
+import tech.project.agregadorinvestimento.controller.dto.CreateAccountDto;
+import tech.project.agregadorinvestimento.controller.dto.CreateUserDto;
+import tech.project.agregadorinvestimento.controller.dto.UpdateUserDto;
+import tech.project.agregadorinvestimento.entity.Account;
+import tech.project.agregadorinvestimento.entity.BillingAddress;
 import tech.project.agregadorinvestimento.entity.User;
+import tech.project.agregadorinvestimento.repository.AccountRepository;
+import tech.project.agregadorinvestimento.repository.BillingAddressRepository;
 import tech.project.agregadorinvestimento.repository.UserRepository;
 
 @Service
 public class UserService {
     
     private UserRepository userRepository;
+    private AccountRepository accountRepository;
+    private BillingAddressRepository billingAddressRepository;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, AccountRepository accountRepository, BillingAddressRepository billingAddressRepository) {
         this.userRepository = userRepository;
+        this.accountRepository = accountRepository;
+        this.billingAddressRepository = billingAddressRepository;
     }
 
     // Example method to create a user
@@ -71,5 +84,42 @@ public class UserService {
         if (userExists) {
             userRepository.deleteById(id);
         }
+    }
+
+    public void createAccount(String userId, CreateAccountDto createAccountDto) {
+        var user = userRepository.findById(UUID.fromString(userId))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        // Logic to create an account for the user
+        var account = new Account(
+            null, // accountId will be generated automatically
+            user,
+            null, // billingAddress can be set later
+            createAccountDto.description(),
+            new ArrayList<>()
+        );
+
+        // Save the account to the repository
+        accountRepository.save(account);
+
+        var billingAddress = new BillingAddress(
+            null,
+            account,
+            createAccountDto.street(),
+            createAccountDto.number()
+        );
+
+        billingAddressRepository.save(billingAddress);
+    }
+
+    public List<AccountResponseDto> listAccounts(String userId) {
+
+        var user = userRepository.findById(UUID.fromString(userId))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        return user.getAccounts()
+                .stream()
+                .map(ac -> new AccountResponseDto(ac.getAccountId().toString(), ac.getDescription()))
+                .toList();
     }
 }
