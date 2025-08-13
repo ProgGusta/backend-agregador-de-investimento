@@ -2,6 +2,9 @@ package tech.project.agregadorinvestimento.entity;
 
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -17,6 +20,7 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "tb_billing_addresses")
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "account")
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
